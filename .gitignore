@@ -30,6 +30,7 @@ Microsoft/
 
 # Local backups
 backups/
+docs/
 
 # Runtime binaries and models
 runtime/bin/

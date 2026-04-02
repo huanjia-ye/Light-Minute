@@ -13,9 +13,11 @@ import { normalizeSettings, useSettingsStore } from '../../features/settings/sto
 import { formatDuration } from '../../lib/format';
 import { sleep } from '../../lib/storage';
 
+const OPEN_IMPORT_EVENT = 'light-minute:open-import';
+
 function createMeetingTitle() {
   const now = new Date();
-  return `StarMinute Sync ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+  return `Light-Minute Sync ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
 }
 
 function getStatusLabel(status: ReturnType<typeof useRecordingStore.getState>['status']) {
@@ -165,9 +167,9 @@ export function HomePage() {
       audioImportInputRef.current?.click();
     };
 
-    window.addEventListener('light-meetily:open-import', openImport);
+    window.addEventListener(OPEN_IMPORT_EVENT, openImport);
     return () => {
-      window.removeEventListener('light-meetily:open-import', openImport);
+      window.removeEventListener(OPEN_IMPORT_EVENT, openImport);
     };
   }, []);
 
@@ -265,7 +267,7 @@ export function HomePage() {
                 <Sparkles size={14} />
                 <span>
                   {recordingEngine.mode === 'local-whisper-live'
-                    ? 'StarMinute live whisper'
+                    ? 'Light-Minute live whisper'
                     : recordingEngine.mode === 'browser-speech'
                       ? `live speech ${settings.liveTranscriptionLanguage === 'auto' ? '(auto)' : `(${settings.liveTranscriptionLanguage})`}`
                       : 'demo mode'}{' '}
@@ -302,7 +304,7 @@ export function HomePage() {
 
                 <TranscriptList
                   segments={recording.segments}
-                  emptyTitle="Welcome to StarMinute!"
+                  emptyTitle="Welcome to Light-Minute!"
                   emptyText="Start recording to see live transcription."
                   surface="flat"
                 />

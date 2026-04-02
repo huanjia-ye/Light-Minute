@@ -30,10 +30,10 @@ interface WhisperResponse {
 
 function buildChunkErrorMessage(error: unknown) {
   if (error instanceof Error) {
-    return `Local whisper live transcription failed. ${error.message}`;
+    return `Light-Minute local whisper live transcription failed. ${error.message}`;
   }
 
-  return 'Local whisper live transcription failed unexpectedly.';
+  return 'Light-Minute local whisper live transcription failed unexpectedly.';
 }
 
 function buildSegmentsFromResponse(
@@ -99,7 +99,7 @@ export class LocalWhisperRecordingEngine implements RecordingEngine {
 
   start(callbacks: RecordingEngineCallbacks) {
     if (!this.isSupported()) {
-      throw new Error('Local whisper live transcription is not supported in this browser.');
+      throw new Error('Light-Minute local whisper live transcription is not supported in this browser.');
     }
 
     this.reset();
@@ -142,7 +142,7 @@ export class LocalWhisperRecordingEngine implements RecordingEngine {
         };
 
         this.recorder.onerror = () => {
-          this.callbacks?.onError?.('Audio capture failed while using the local whisper recorder.');
+          this.callbacks?.onError?.('Audio capture failed while using the Light-Minute local whisper recorder.');
         };
 
         this.recorder.start(3000);

@@ -7,13 +7,23 @@ export interface SummaryDraftSnapshot {
   baseSummaryMarkdown: string;
 }
 
+const SUMMARY_DRAFT_STORAGE_PREFIX = 'light-minute:summary-draft:';
+const LEGACY_SUMMARY_DRAFT_STORAGE_PREFIX = 'light-meetily:summary-draft:';
+
 function getSummaryDraftStorageKey(meetingId: string) {
-  return `light-meetily:summary-draft:${meetingId}`;
+  return `${SUMMARY_DRAFT_STORAGE_PREFIX}${meetingId}`;
+}
+
+function getLegacySummaryDraftStorageKey(meetingId: string) {
+  return `${LEGACY_SUMMARY_DRAFT_STORAGE_PREFIX}${meetingId}`;
 }
 
 export function loadSummaryDraft(meetingId: string) {
   try {
-    const rawValue = getBrowserStorage().getItem(getSummaryDraftStorageKey(meetingId));
+    const storage = getBrowserStorage();
+    const rawValue =
+      storage.getItem(getSummaryDraftStorageKey(meetingId)) ??
+      storage.getItem(getLegacySummaryDraftStorageKey(meetingId));
     if (!rawValue) {
       return null;
     }
@@ -40,7 +50,9 @@ export function loadSummaryDraft(meetingId: string) {
 
 export function saveSummaryDraft(meetingId: string, draft: SummaryDraftSnapshot) {
   try {
-    getBrowserStorage().setItem(getSummaryDraftStorageKey(meetingId), JSON.stringify(draft));
+    const storage = getBrowserStorage();
+    storage.setItem(getSummaryDraftStorageKey(meetingId), JSON.stringify(draft));
+    storage.removeItem(getLegacySummaryDraftStorageKey(meetingId));
   } catch {
     // Ignore persistence failures so editing remains usable.
   }
@@ -48,7 +60,9 @@ export function saveSummaryDraft(meetingId: string, draft: SummaryDraftSnapshot)
 
 export function clearSummaryDraft(meetingId: string) {
   try {
-    getBrowserStorage().removeItem(getSummaryDraftStorageKey(meetingId));
+    const storage = getBrowserStorage();
+    storage.removeItem(getSummaryDraftStorageKey(meetingId));
+    storage.removeItem(getLegacySummaryDraftStorageKey(meetingId));
   } catch {
     // Ignore persistence failures so editing remains usable.
   }

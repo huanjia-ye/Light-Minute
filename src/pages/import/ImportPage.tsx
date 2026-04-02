@@ -104,7 +104,7 @@ export function ImportPage() {
       setErrorMessage(
         error instanceof Error ? error.message : 'Audio import failed unexpectedly.',
       );
-      setStatusMessage('StarMinute could not finish importing this file.');
+      setStatusMessage('Light-Minute could not finish importing this file.');
     }
   };
 

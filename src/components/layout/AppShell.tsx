@@ -58,7 +58,7 @@ export function AppShell() {
             <Sparkles size={20} />
           </div>
           <h1 className="mt-1 font-serif text-xl font-extrabold italic tracking-tight text-slate-800">
-            StarMinute
+            Light-Minute
           </h1>
         </div>
 

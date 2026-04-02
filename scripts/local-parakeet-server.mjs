@@ -146,5 +146,5 @@ const server = createServer(async (request, response) => {
 });
 
 server.listen(port, '127.0.0.1', () => {
-  process.stdout.write(`[light-meetily] Local Parakeet upload server ready at http://127.0.0.1:${port}\n`);
+  process.stdout.write(`[light-minute] Local Parakeet upload server ready at http://127.0.0.1:${port}\n`);
 });

@@ -3,19 +3,22 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { getBrowserStorage } from '../../lib/browserStorage';
 import type { AppSettings } from '../../types/settings';
 
+const SETTINGS_STORAGE_KEY = 'light-minute:settings';
+const LEGACY_SETTINGS_STORAGE_KEY = 'light-meetily:settings';
+
 const defaultSettings: AppSettings = {
   provider: 'openai',
   model: 'gpt-4.1-mini',
   transcriptionModel: 'whisper-1',
-  transcriptionEndpoint: 'http://127.0.0.1:8178',
+  transcriptionEndpoint: '',
   transcriptionApiKey: '',
   liveTranscriptionLanguage: 'auto',
   endpoint: 'https://api.openai.com/v1',
   apiKey: '',
-  recordingsPath: 'C:/Recordings/light-meetily',
+  recordingsPath: 'Browser local storage',
   micDevice: 'Default microphone',
   templateId: 'standard-meeting',
-  allowDemoFallbacks: false,
+  allowDemoFallbacks: true,
 };
 
 interface SettingsStore {
@@ -58,8 +61,23 @@ export const useSettingsStore = create<SettingsStore>()(
       resetSettings: () => set({ settings: normalizeSettings(defaultSettings) }),
     }),
     {
-      name: 'light-meetily:settings',
-      storage: createJSONStorage(getBrowserStorage),
+      name: SETTINGS_STORAGE_KEY,
+      storage: createJSONStorage(() => {
+        const storage = getBrowserStorage();
+
+        return {
+          getItem: (name) =>
+            storage.getItem(name) ??
+            (name === SETTINGS_STORAGE_KEY ? storage.getItem(LEGACY_SETTINGS_STORAGE_KEY) : null),
+          setItem: (name, value) => storage.setItem(name, value),
+          removeItem: (name) => {
+            storage.removeItem(name);
+            if (name === SETTINGS_STORAGE_KEY) {
+              storage.removeItem(LEGACY_SETTINGS_STORAGE_KEY);
+            }
+          },
+        };
+      }),
       merge: (persistedState, currentState) => {
         const typedState = persistedState as Partial<SettingsStore> | undefined;
 

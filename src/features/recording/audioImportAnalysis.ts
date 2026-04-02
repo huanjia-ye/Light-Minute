@@ -202,10 +202,10 @@ function buildApiError(status: number, body: string) {
 
 function buildLocalWhisperError(status: number, body: string) {
   if (status === 404) {
-    return 'The light-Meetily whisper server did not expose /inference.';
+    return 'The Light-Minute whisper server did not expose /inference.';
   }
 
-  return `Local light-Meetily transcription failed (${status}). ${body}`.trim();
+  return `Local Light-Minute transcription failed (${status}). ${body}`.trim();
 }
 
 export async function analyzeImportedAudio(
@@ -252,7 +252,7 @@ export async function analyzeImportedAudio(
   for (const localParakeetUrl of localParakeetUrls) {
     options?.onStatusChange?.({
       stage: 'local-parakeet',
-      message: 'Analyzing audio with the built-in StarMinute multilingual runtime...',
+      message: 'Analyzing audio with the optional Light-Minute local Parakeet runtime...',
     });
 
     try {
@@ -272,19 +272,19 @@ export async function analyzeImportedAudio(
         }
 
         localParakeetErrorMessage =
-          'The built-in StarMinute Parakeet upload service returned no usable transcript text.';
+          'The optional Light-Minute Parakeet upload service returned no usable transcript text.';
         continue;
       }
 
       const body = await readResponseTextSafely(response);
       localParakeetErrorMessage =
         response.status === 404
-          ? 'The built-in StarMinute Parakeet upload service did not expose /transcribe.'
-          : `The built-in StarMinute Parakeet upload service failed (${response.status}). ${body}`.trim();
+          ? 'The optional Light-Minute Parakeet upload service did not expose /transcribe.'
+          : `The optional Light-Minute Parakeet upload service failed (${response.status}). ${body}`.trim();
     } catch (error) {
       localParakeetErrorMessage = describeLocalRuntimeError(
         error,
-        'StarMinute local Parakeet upload service',
+        'Light-Minute local Parakeet upload service',
       );
     }
 
@@ -296,7 +296,7 @@ export async function analyzeImportedAudio(
   if (localWhisperUrls.length > 0) {
     options?.onStatusChange?.({
       stage: 'local-whisper',
-      message: 'Falling back to the built-in StarMinute whisper runtime...',
+      message: 'Falling back to the optional Light-Minute whisper runtime...',
     });
 
     for (const localWhisperUrl of localWhisperUrls) {
@@ -307,7 +307,7 @@ export async function analyzeImportedAudio(
       } catch (error) {
         localWhisperErrorMessage = describeLocalRuntimeError(
           error,
-          'StarMinute whisper server',
+          'Light-Minute whisper server',
         );
         continue;
       }
@@ -331,7 +331,7 @@ export async function analyzeImportedAudio(
       }
 
       localWhisperErrorMessage =
-        'The StarMinute whisper server returned no usable transcript text for this recording.';
+        'The Light-Minute whisper server returned no usable transcript text for this recording.';
     }
 
     if (!apiKey && !normalizedSettings.allowDemoFallbacks && localWhisperErrorMessage) {
@@ -340,7 +340,7 @@ export async function analyzeImportedAudio(
         .join(' ');
 
       throw new Error(
-        `The built-in StarMinute upload transcription runtime is not reachable. Start the app with npm run dev, then try importing again.${reasons ? ` ${reasons}` : ''}`,
+        `The optional Light-Minute local transcription runtime is not reachable. Start the app with npm run dev:local, then try importing again.${reasons ? ` ${reasons}` : ''}`,
       );
     }
   }
@@ -352,7 +352,7 @@ export async function analyzeImportedAudio(
         .join(' ');
 
       throw new Error(
-        `Upload analysis needs either the built-in StarMinute local transcription runtime or a real transcription API. Add it in Settings or enable demo fallback explicitly.${reasons ? ` ${reasons}` : ''}`,
+        `Upload analysis needs either the optional Light-Minute local transcription runtime or a real transcription API. Add it in Settings or enable demo fallback explicitly.${reasons ? ` ${reasons}` : ''}`,
       );
     }
 

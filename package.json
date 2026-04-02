@@ -1,10 +1,11 @@
 {
-  "name": "light-meetily",
+  "name": "light-minute",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node scripts/dev-local.mjs",
+    "dev": "vite",
+    "dev:local": "node scripts/dev-local.mjs",
     "dev:vite": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",

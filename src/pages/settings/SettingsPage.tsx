@@ -106,6 +106,9 @@ export function SettingsPage() {
                       setDraft((current) => ({ ...current, recordingsPath: event.target.value }))
                     }
                   />
+                  <p className="mt-3 text-sm text-slate-500">
+                    The web demo stores meetings in browser storage. This field is only a user preference for future desktop or backend-connected flows.
+                  </p>
                 </div>
               </div>
             )}
@@ -170,7 +173,7 @@ export function SettingsPage() {
                     <option value="en-US">English</option>
                   </select>
                   <p className="mt-3 text-sm text-slate-500">
-                    Live recording now prefers browser speech recognition for auto and Chinese. English can still use the built-in local whisper path.
+                    Live recording prefers browser speech recognition by default. English can optionally use a local whisper runtime if you configure one.
                   </p>
                 </div>
 
@@ -188,10 +191,10 @@ export function SettingsPage() {
                         transcriptionEndpoint: event.target.value,
                       }))
                     }
-                    placeholder="Leave empty to reuse the summary endpoint"
+                    placeholder="Optional: local whisper or transcription API endpoint"
                   />
                   <p className="mt-3 text-sm text-slate-500">
-                    Defaults to the built-in light-Meetily local engines: Parakeet for multilingual upload analysis and whisper for English-leaning live chunks.
+                    Optional. Leave empty for the zero-config demo flow, or provide a local whisper service or OpenAI-compatible transcription endpoint.
                   </p>
                 </div>
 
@@ -218,7 +221,7 @@ export function SettingsPage() {
                   <div>
                     <p className="text-lg font-bold text-slate-800">Allow demo fallback for uploads</p>
                     <p className="mt-2 text-sm leading-6 text-slate-500">
-                      Only use placeholder transcript text when a real transcription API is not configured.
+                      Keeps the import flow usable even when no local runtime or real transcription API is configured.
                     </p>
                   </div>
                   <input

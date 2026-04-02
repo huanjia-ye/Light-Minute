@@ -24,7 +24,7 @@ export function getBrowserStorage(): Storage {
 
   try {
     const { localStorage } = window;
-    const probeKey = '__light-meetily-storage-probe__';
+    const probeKey = '__light-minute-storage-probe__';
     localStorage.setItem(probeKey, 'ok');
     localStorage.removeItem(probeKey);
     return localStorage;

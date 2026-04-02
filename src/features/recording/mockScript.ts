@@ -2,7 +2,7 @@ import type { TranscriptSegment } from '../../types/meeting';
 import { createId } from '../../lib/storage';
 
 const SCRIPT_LINES = [
-  { seconds: 4, text: 'Thanks everyone for joining. Today we need to align on the lightweight StarMinute MVP.', confidence: 0.97 },
+  { seconds: 4, text: 'Thanks everyone for joining. Today we need to align on the lightweight Light-Minute MVP.', confidence: 0.97 },
   { seconds: 10, text: 'The goal is to keep real-time transcription fast while still shipping a polished AI summary flow.', confidence: 0.96 },
   { seconds: 18, text: 'For the first release we will focus on microphone-only recording and postpone system audio mixing.', confidence: 0.95 },
   { seconds: 28, text: 'The frontend will move to Vite, React Router, Zustand and Sass modules so the structure stays simple.', confidence: 0.95 },
@@ -26,7 +26,7 @@ export function buildMockRecordingScript(): TranscriptSegment[] {
 export function buildImportedAudioScript(fileName: string): TranscriptSegment[] {
   const baseName = fileName.replace(/\.[^.]+$/, '');
   const lines = [
-    `Imported audio "${baseName}" was added to StarMinute for offline processing.`,
+    `Imported audio "${baseName}" was added to Light-Minute for offline processing.`,
     'The discussion focused on scope control, transcript quality and a practical MVP delivery plan.',
     'The team decided to keep the lightweight version centered around recording, meeting history and AI summary generation.',
     'One action item is to wire the real backend adapters after the frontend flow is fully stable.',

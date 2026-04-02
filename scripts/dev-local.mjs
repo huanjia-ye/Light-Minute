@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -12,7 +12,7 @@ const whisperBaseUrl = 'http://127.0.0.1:8178';
 const parakeetBaseUrl = 'http://127.0.0.1:8179';
 
 function log(message) {
-  process.stdout.write(`[light-meetily] ${message}\n`);
+  process.stdout.write(`[light-minute] ${message}\n`);
 }
 
 function runCommand(file, args) {
@@ -22,53 +22,8 @@ function runCommand(file, args) {
   });
 }
 
-function getLatestMtime(targetPath) {
-  const stats = statSync(targetPath);
-
-  if (!stats.isDirectory()) {
-    return stats.mtimeMs;
-  }
-
-  return readdirSync(targetPath).reduce((latest, entry) => {
-    const entryPath = path.join(targetPath, entry);
-    return Math.max(latest, getLatestMtime(entryPath));
-  }, stats.mtimeMs);
-}
-
 function ensureLocalParakeetHelper() {
   const helperPath = path.join(resolvedProjectRoot, 'runtime', 'bin', 'light-parakeet-helper.exe');
-  const helperSourceRoot = path.join(projectRoot, 'runtime', 'parakeet-helper-src');
-  const buildScriptPath = path.join(projectRoot, 'scripts', 'build-local-parakeet-helper.cmd');
-  const shouldBuild =
-    !existsSync(helperPath) ||
-    (existsSync(helperSourceRoot) && getLatestMtime(helperSourceRoot) > getLatestMtime(helperPath));
-
-  if (!shouldBuild && existsSync(helperPath)) {
-    return true;
-  }
-
-  if (!existsSync(buildScriptPath)) {
-    return false;
-  }
-
-  log(
-    existsSync(helperPath)
-      ? 'Rebuilding the local Parakeet helper because the source changed...'
-      : 'Building the local Parakeet helper because the upload runtime binary is missing...',
-  );
-  const buildResult = runCommand('cmd.exe', ['/d', '/s', '/c', `"${buildScriptPath}"`]);
-
-  if (buildResult.status !== 0) {
-    log('Failed to build the local Parakeet helper automatically.');
-    if (buildResult.stdout?.trim()) {
-      log(buildResult.stdout.trim());
-    }
-    if (buildResult.stderr?.trim()) {
-      log(buildResult.stderr.trim());
-    }
-    return false;
-  }
-
   return existsSync(helperPath);
 }
 
@@ -96,7 +51,7 @@ function ensureAsciiProjectRoot() {
 
   if (existingLine) {
     if (existingLine.toLowerCase().includes(normalizedProjectRoot)) {
-      log(`Reusing ASCII repo alias ${driveLetter} for the light-Meetily workspace.`);
+      log(`Reusing ASCII repo alias ${driveLetter} for the Light-Minute workspace.`);
       return {
         root: driveRoot,
         cleanup: () => {},
@@ -125,7 +80,7 @@ function ensureAsciiProjectRoot() {
     };
   }
 
-  log(`Created temporary ASCII repo alias ${driveLetter} for the light-Meetily workspace.`);
+  log(`Created temporary ASCII repo alias ${driveLetter} for the Light-Minute workspace.`);
   return {
     root: driveRoot,
     cleanup: () => {
@@ -181,12 +136,12 @@ async function waitForWhisperServer(timeoutMs = 45000) {
 
 async function startLocalWhisperIfNeeded() {
   if (await isServerReachable(`${whisperBaseUrl}/`)) {
-    log('Reusing existing light-Meetily whisper server on 127.0.0.1:8178.');
+    log('Reusing existing Light-Minute whisper server on 127.0.0.1:8178.');
     return null;
   }
 
   if (!existsSync(whisperExePath) || !existsSync(whisperModelPath)) {
-    log('The light-Meetily whisper runtime is missing; upload analysis will need an API endpoint instead.');
+    log('The optional Light-Minute whisper runtime is missing; uploads will use API or demo fallback instead.');
     return null;
   }
 
@@ -205,7 +160,7 @@ async function startLocalWhisperIfNeeded() {
     args.push('--convert');
   }
 
-  log('Starting light-Meetily whisper server for local upload transcription...');
+  log('Starting Light-Minute whisper server for local upload transcription...');
   const whisperProcess = spawn(whisperExePath, args, {
     cwd: whisperPackageDir,
     stdio: 'inherit',
@@ -219,7 +174,7 @@ async function startLocalWhisperIfNeeded() {
   if (!ready) {
     log('Local whisper server did not become ready in time; uploads may still fall back to API mode.');
   } else {
-    log('Local whisper server is ready at http://127.0.0.1:8178.');
+    log('Light-Minute whisper server is ready at http://127.0.0.1:8178.');
   }
 
   return whisperProcess;
@@ -227,7 +182,7 @@ async function startLocalWhisperIfNeeded() {
 
 async function startLocalParakeetIfNeeded() {
   if (await isServerReachable(`${parakeetBaseUrl}/health`)) {
-    log('Reusing existing light-Meetily Parakeet server on 127.0.0.1:8179.');
+    log('Reusing existing Light-Minute Parakeet server on 127.0.0.1:8179.');
     return null;
   }
 
@@ -253,13 +208,13 @@ async function startLocalParakeetIfNeeded() {
     !existsSync(parakeetHelperPath) ||
     !existsSync(parakeetModelPath)
   ) {
-    log('The local Parakeet upload runtime is missing; audio uploads will fall back to whisper or API mode.');
+    log('The optional Light-Minute Parakeet runtime is missing; audio uploads will fall back to whisper, API, or demo mode.');
     return null;
   }
 
   mkdirSync(tempDir, { recursive: true });
 
-  log('Starting light-Meetily Parakeet upload server for local multilingual transcription...');
+  log('Starting Light-Minute Parakeet upload server for local multilingual transcription...');
   const parakeetProcess = spawn(
     process.execPath,
     [parakeetServerScript],
@@ -281,7 +236,7 @@ async function startLocalParakeetIfNeeded() {
   if (!ready) {
     log('Local Parakeet server did not become ready in time; uploads may still fall back to whisper or API mode.');
   } else {
-    log('Local Parakeet upload server is ready at http://127.0.0.1:8179.');
+    log('Light-Minute Parakeet upload server is ready at http://127.0.0.1:8179.');
   }
 
   return parakeetProcess;

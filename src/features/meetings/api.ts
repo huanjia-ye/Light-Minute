@@ -8,7 +8,8 @@ import type {
 import type { AppSettings } from '../../types/settings';
 import { analyzeImportedAudio } from '../recording/audioImportAnalysis';
 
-const MEETINGS_KEY = 'light-meetily:meetings';
+const MEETINGS_KEY = 'light-minute:meetings';
+const LEGACY_MEETINGS_KEY = 'light-meetily:meetings';
 
 export interface AudioImportProgress {
   stage: 'uploading' | 'analyzing' | 'saving' | 'opening';
@@ -25,7 +26,10 @@ interface CreateMeetingInput {
 }
 
 function loadMeetings() {
-  const meetings = readStorage<MeetingRecord[]>(MEETINGS_KEY, []);
+  const meetings = readStorage<MeetingRecord[]>(
+    MEETINGS_KEY,
+    readStorage<MeetingRecord[]>(LEGACY_MEETINGS_KEY, []),
+  );
   return meetings.sort((left, right) => right.createdAt.localeCompare(left.createdAt));
 }
 

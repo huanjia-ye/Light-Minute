@@ -40,8 +40,8 @@ export function AppShell() {
   }, [meetingsQuery.data]);
 
   return (
-    <div className="flex min-h-screen text-macaron-text">
-      <aside className="relative z-10 flex w-72 shrink-0 flex-col border-r-[2px] border-pink-200 bg-white/80 p-6 shadow-[4px_0px_10px_0px_rgba(0,0,0,0.02)] backdrop-blur-md">
+    <div className="flex min-h-screen items-start text-macaron-text">
+      <aside className="sticky top-0 relative z-10 flex h-dvh min-h-0 w-72 shrink-0 flex-col overflow-hidden border-r-[2px] border-pink-200 bg-white/80 p-6 shadow-[4px_0px_10px_0px_rgba(0,0,0,0.02)] backdrop-blur-md">
         <div
           className="mb-8 flex cursor-pointer items-center gap-3 group"
           onClick={() => navigate('/')}
@@ -83,7 +83,7 @@ export function AppShell() {
           })}
         </div>
 
-        <div className="mb-6 flex-1 overflow-y-auto pr-2">
+        <div className="mb-6 min-h-0 flex-1 overflow-y-auto pr-2">
           <div className="mb-3 flex items-center justify-between px-1">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
               Recent Notes

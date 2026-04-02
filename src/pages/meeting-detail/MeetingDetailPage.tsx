@@ -301,13 +301,16 @@ export function MeetingDetailPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 pb-8 pt-6 text-macaron-text">
+    <div className="mx-auto flex h-dvh w-full max-w-7xl flex-col px-6 pb-6 pt-6 text-macaron-text">
       <header className="mb-4 rounded-[22px] border-[2px] border-white bg-white/75 px-5 py-4 shadow-macaron-button-slate backdrop-blur-sm">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="min-w-0">
-            <div className="flex items-center gap-3">
-              <Sparkles size={18} className="shrink-0 text-pink-400" />
-              <h1 className="truncate text-[2.6rem] font-bold tracking-[-0.04em] text-slate-800 md:text-[3rem]">
+            <div className="flex items-center gap-2.5">
+              <Sparkles size={26} className="shrink-0 text-pink-400" />
+              <h1
+                className="truncate text-[2rem] font-medium tracking-[-0.015em] text-slate-800 md:text-[2.3rem]"
+                style={{ fontFamily: 'var(--font-display)' }}
+              >
                 {meeting.title}
               </h1>
             </div>
@@ -369,20 +372,14 @@ export function MeetingDetailPage() {
         </div>
       </div>
 
-      <section className="grid flex-1 gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,0.9fr)]">
+      <section className="grid min-h-0 flex-1 gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,0.9fr)]">
         <WindowBox
           title="Live Transcript.txt"
           colorClass="bg-blue-50"
           borderColorClass="border-blue-200"
-          className="min-h-[620px]"
+          className="h-full min-h-0"
         >
-          <div className="flex h-full flex-col p-5">
-            <div className="mb-4">
-              <h2 className="text-[2.35rem] font-bold tracking-[-0.03em] text-slate-800">
-                Transcript
-              </h2>
-            </div>
-
+          <div className="flex h-full min-h-0 flex-col p-5">
             <TranscriptList
               segments={meeting.segments}
               emptyTitle="No transcript available"
@@ -394,7 +391,7 @@ export function MeetingDetailPage() {
         </WindowBox>
 
         <SummaryEditor
-          className="min-h-[620px]"
+          className="h-full min-h-0"
           markdown={markdown}
           isSaving={updateSummaryMutation.isPending}
           isDirty={isDirty}

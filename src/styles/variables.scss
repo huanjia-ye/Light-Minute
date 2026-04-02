@@ -1,0 +1,24 @@
+:root {
+  --bg: #f3f5fb;
+  --sidebar: #101828;
+  --sidebar-surface: #182131;
+  --surface: #ffffff;
+  --surface-muted: #f8f9fd;
+  --surface-emphasis: #eef3ff;
+  --text: #0f172a;
+  --text-soft: #5b6476;
+  --text-inverse: #eef2ff;
+  --border: #dbe2ef;
+  --primary: #315efb;
+  --primary-soft: rgba(49, 94, 251, 0.12);
+  --success: #159a63;
+  --warning: #c87f00;
+  --danger: #d14343;
+  --shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
+  --radius-lg: 24px;
+  --radius-md: 18px;
+  --radius-sm: 12px;
+  --font-body:
+    "Inter", "Segoe UI", "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont,
+    sans-serif;
+}

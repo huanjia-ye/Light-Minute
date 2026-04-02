@@ -1,0 +1,89 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 100%;
+  padding: 1.15rem 1.2rem 1.2rem;
+  background: #ffffff;
+}
+
+.topBar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.title {
+  margin: 0;
+  color: #101828;
+  font-size: 1.04rem;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin: 0.35rem 0 0;
+  color: #667085;
+  line-height: 1.5;
+}
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.42rem 0.78rem;
+  border-radius: 999px;
+  background: #f7f8fc;
+  border: 1px solid rgba(224, 228, 236, 0.95);
+  color: #667085;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.errorBanner {
+  padding: 0.82rem 0.95rem;
+  border-radius: 14px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b42318;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.editorSurface {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 420px;
+  padding: 1rem;
+  border-radius: 18px;
+  background: #fbfcfe;
+  border: 1px solid rgba(226, 230, 237, 0.9);
+}
+
+.editorLabel {
+  margin: 0;
+  color: #344054;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.textarea {
+  flex: 1;
+  min-height: 320px;
+  border: 0;
+  background: transparent;
+  resize: none;
+  color: #111827;
+  line-height: 1.72;
+}
+
+.textarea:focus {
+  outline: none;
+}

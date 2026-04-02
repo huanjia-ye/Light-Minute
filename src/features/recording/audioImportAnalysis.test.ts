@@ -6,11 +6,11 @@ describe('audio import analysis', () => {
     vi.restoreAllMocks();
   });
 
-  it('uses the local StarMinute Parakeet helper for multilingual uploads without requiring an api key', async () => {
+  it('uses the local Light-Minute Parakeet helper for multilingual uploads without requiring an api key', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
       json: async () => ({
-        text: '[MUSIC] First imported sentence. 第二句导入文本。',
+        text: '[MUSIC] First imported sentence. Second imported sentence.',
       }),
     } as Response);
 
@@ -108,8 +108,9 @@ describe('audio import analysis', () => {
         endpoint: '',
         transcriptionApiKey: '',
         transcriptionEndpoint: '',
+        allowDemoFallbacks: false,
       }),
-    ).rejects.toThrow(/built-in StarMinute upload transcription runtime is not reachable/i);
+    ).rejects.toThrow(/optional Light-Minute local transcription runtime is not reachable/i);
   });
 
   it('allows explicit demo fallback when the setting is turned on', async () => {

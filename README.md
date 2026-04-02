@@ -1,128 +1,127 @@
-# Light Meetily
+# Light-Minute
 
-Light Meetily is a resume-friendly MVP rebuilt from the mature Meetily product direction.
-It keeps the core experience small and fast:
+Light-Minute is a meeting capture and summarization workspace built around a simple flow:
 
-- home recording workspace
-- streamed transcript panel
-- meeting archive
-- meeting detail page
-- AI summary generation and editing
-- audio import flow
-- focused settings page
+`record -> transcript -> summary -> archive`
 
-This version currently uses mock adapters so the full frontend workflow is already usable before a
-real backend is connected.
+It works out of the box in a zero-config mode, with optional local transcription and API-based enhancements.
 
-## Stack
+## Quick Start
 
-- Vite
-- React
-- TypeScript
-- React Router
-- Sass Modules
-- Zustand
-- TanStack Query
-- TanStack Virtual
-- Vitest + Testing Library
+### Requirements
 
-## Current MVP Features
+- Node.js 20+
+- npm
 
-### Recording workspace
-
-- start, pause, resume, stop and save
-- mock transcript streaming
-- live transcript list with virtualization
-- recent meetings panel
-
-### Meeting archive
-
-- list all saved meetings
-- search by meeting title or summary text
-- open meeting detail pages
-
-### Meeting detail
-
-- transcript timeline
-- generate AI summary with mock OpenAI or Custom OpenAI behavior
-- edit markdown summary
-- save summary
-- copy summary markdown
-
-### Settings
-
-- OpenAI / Custom OpenAI provider toggle
-- model
-- endpoint
-- API key
-- summary template
-- microphone
-- recordings path
-
-### Persistence
-
-- meeting records are stored in browser storage
-- settings are persisted locally
-- when browser local storage is blocked, the app falls back to in-memory storage
-
-## Routing Notes
-
-The app supports both:
-
-- `http://` / `https://` dev or preview runs
-- direct `file://` opening of the built app
-
-It automatically switches to hash routing when opened from a local file, which avoids the blank-page
-issue caused by standard browser history routing on file paths.
-
-## Run
+### Install
 
 ```bash
 npm install
+```
+
+### Run
+
+```bash
 npm run dev
 ```
 
-Open the local Vite URL shown in the terminal.
+Open the local Vite URL shown in the terminal. This is the recommended first run for understanding the product quickly.
 
-## Build
+## What It Is
 
-```bash
-npm run build
+Light-Minute is a browser-based meeting notes application for capturing speech, reviewing transcripts, and turning them into structured summaries.
+
+- live recording workspace
+- audio import flow
+- meeting archive
+- meeting detail workspace
+- summary generation and editing
+- settings for optional integrations
+
+## Current Capabilities
+
+- record, pause, resume, stop, and save meetings
+- stream transcript segments into the session view
+- import audio and create meeting records
+- review transcript and summary side by side
+- generate summaries into a streaming editor
+- recover local summary drafts after refresh
+- persist meetings and settings in browser storage
+- fall back gracefully when persistent storage is unavailable
+
+## Running Modes
+
+### Default Mode
+
+- start with `npm run dev`
+- no extra local services required
+- import and summary flows can use demo fallback when real services are not configured
+
+### Optional Local Transcription Mode
+
+- start with `npm run dev:local`
+- use only when the required local transcription files already exist in `runtime/`
+- can use local Whisper and Parakeet services for stronger transcription workflows
+- this is optional enhancement, not the default requirement
+
+## Optional Configuration
+
+### Summary API
+
+Configure these settings if you want real summary generation instead of the demo summarizer:
+
+- `provider`
+- `model`
+- `endpoint`
+- `apiKey`
+
+### Upload Transcription Endpoint
+
+Configure these settings if you want real upload transcription:
+
+- `transcriptionEndpoint`
+- `transcriptionApiKey`
+- `transcriptionModel`
+
+### Local Transcription
+
+Use `npm run dev:local` only when local transcription files are already available in `runtime/`.
+
+## Tech Stack
+
+- React
+- TypeScript
+- Vite
+- React Router
+- Zustand
+- TanStack Query
+- Tailwind CSS
+- Vitest
+- Testing Library
+
+## Project Structure
+
+```text
+src/
+  app/          application bootstrap and routing setup
+  assets/       static app assets bundled through Vite
+  components/   reusable UI and product-facing components
+  features/     domain logic for meetings, recording, settings, and summary
+  lib/          shared helpers for storage, formatting, and endpoint handling
+  pages/        route-level screens such as home, import, meetings, and settings
+  styles/       global styling entry points and theme layers
+  test/         shared testing setup and helpers
+  types/        shared TypeScript types used across the app
+scripts/        local development helpers and packaging utilities
+runtime/        optional local transcription files and helper source
+public/         static public assets copied as-is at build time
+docs/           working notes and internal project documentation
 ```
 
-The production output is written to `dist/`.
-
-## Test
+## Validation
 
 ```bash
 npm run lint
 npm run test
 npm run build
 ```
-
-## Covered By Automated Tests
-
-- router mode selection
-- browser storage fallback
-- mock recording engine
-- meeting storage API
-- home page recording flow
-- home page import flow
-- meetings page search and detail navigation
-- meeting detail summary generation, save and copy
-- settings save and reset
-
-## Next Step For Real Backend
-
-You can keep the current frontend and replace the mock adapters with:
-
-- a real transcription stream over WebSocket or Tauri events
-- a real meeting persistence API
-- an OpenAI-compatible summary endpoint
-
-The main integration seams are already isolated in:
-
-- `src/features/recording/`
-- `src/features/meetings/`
-- `src/features/summary/`
-- `src/features/settings/`

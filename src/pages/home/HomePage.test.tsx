@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+﻿import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -52,7 +52,7 @@ describe('home page', () => {
 
       await waitFor(
         () => {
-          expect(screen.getByRole('heading', { name: /StarMinute Sync/i })).toBeInTheDocument();
+          expect(screen.getByRole('heading', { name: /Light-Minute Sync/i })).toBeInTheDocument();
         },
         { timeout: 5000 },
       );
@@ -125,3 +125,5 @@ describe('home page', () => {
     12000,
   );
 });
+
+

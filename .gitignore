@@ -31,6 +31,10 @@ Microsoft/
 # Local backups
 backups/
 docs/
+scripts/create-source-runtime-snapshot.ps1
+scripts/create-source-snapshot.ps1
+scripts/create_pre_ui_backup.ps1
+scripts/test-local-parakeet-server.ps1
 
 # Runtime binaries and models
 runtime/bin/

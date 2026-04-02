@@ -113,9 +113,8 @@ src/
   test/         shared testing setup and helpers
   types/        shared TypeScript types used across the app
 scripts/        local development helpers and packaging utilities
-runtime/        optional local transcription files and helper source
+runtime/        optional local transcription helper source
 public/         static public assets copied as-is at build time
-docs/           working notes and internal project documentation
 ```
 
 ## Validation

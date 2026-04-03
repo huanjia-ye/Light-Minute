@@ -16,6 +16,24 @@ interface SummaryEditorProps {
 
 type EditorMode = 'preview' | 'edit';
 
+function getPreviewMarkdownLines(markdown: string) {
+  const lines = markdown.split('\n');
+  const firstContentLineIndex = lines.findIndex((line) => line.trim().length > 0);
+
+  if (firstContentLineIndex === -1 || !lines[firstContentLineIndex].startsWith('# ')) {
+    return lines;
+  }
+
+  const nextLineIndex = firstContentLineIndex + 1;
+  const previewLines = [...lines];
+  previewLines.splice(
+    firstContentLineIndex,
+    nextLineIndex < previewLines.length && !previewLines[nextLineIndex].trim() ? 2 : 1,
+  );
+
+  return previewLines;
+}
+
 function renderSummaryMarkdown(markdown: string) {
   if (!markdown.trim()) {
     return (
@@ -28,12 +46,15 @@ function renderSummaryMarkdown(markdown: string) {
     );
   }
 
-  return markdown.split('\n').map((line, index) => {
+  const previewLines = getPreviewMarkdownLines(markdown);
+
+  return previewLines.map((line, index) => {
     if (line.startsWith('# ')) {
       return (
         <h1
           key={index}
-          className="mb-6 flex items-center gap-2 text-3xl font-extrabold text-slate-800"
+          className="mb-6 flex items-center gap-2 text-[2rem] font-semibold tracking-[-0.02em] text-slate-800"
+          style={{ fontFamily: 'var(--font-display)' }}
         >
           <Sparkles className="text-yellow-400" size={24} />
           {line.slice(2)}
@@ -42,9 +63,14 @@ function renderSummaryMarkdown(markdown: string) {
     }
 
     if (line.startsWith('## ')) {
+      const isFirstVisibleSection = previewLines.slice(0, index).every((prevLine) => !prevLine.trim());
+
       return (
-        <div key={index} className="mb-4 mt-8 border-b-2 border-pink-100 pb-2">
-          <h2 className="text-sm font-bold uppercase tracking-[0.24em] text-pink-500">
+        <div
+          key={index}
+          className={`${isFirstVisibleSection ? 'mb-3 border-b border-pink-100 pb-1.5' : 'mb-3 mt-5 border-b border-pink-100 pb-1.5'}`}
+        >
+          <h2 className="text-[0.78rem] font-bold uppercase tracking-[0.12em] text-pink-500">
             {line.slice(3)}
           </h2>
         </div>
@@ -53,9 +79,9 @@ function renderSummaryMarkdown(markdown: string) {
 
     if (line.startsWith('- ')) {
       return (
-        <div key={index} className="mb-3 flex items-start gap-3 text-slate-600">
-          <span className="mt-[0.72rem] h-2 w-2 shrink-0 rounded-full bg-pink-400" />
-          <span className="leading-8">{line.slice(2)}</span>
+        <div key={index} className="mb-2 flex items-start gap-2 text-slate-600">
+          <span className="mt-[0.52rem] h-1.5 w-1.5 shrink-0 rounded-full bg-pink-400" />
+          <span className="break-words text-[0.9rem] leading-6">{line.slice(2)}</span>
         </div>
       );
     }
@@ -73,11 +99,11 @@ function renderSummaryMarkdown(markdown: string) {
     }
 
     if (!line.trim()) {
-      return <div key={index} className="h-3" />;
+      return <div key={index} className="h-2" />;
     }
 
     return (
-      <p key={index} className="mb-3 leading-8 text-slate-600">
+      <p key={index} className="mb-2 break-words text-[0.9rem] leading-6 text-slate-600">
         {line}
       </p>
     );
@@ -109,7 +135,7 @@ export function SummaryEditor({
       shadowClass="shadow-macaron-button-yellow"
       className={className}
     >
-      <div className="flex h-full flex-col bg-white">
+      <div className="flex h-full min-h-0 flex-col bg-white">
         <div className="flex items-center justify-end gap-2 border-b-[2px] border-yellow-200 bg-yellow-50/70 px-4 py-3">
           <button
             type="button"
@@ -138,7 +164,7 @@ export function SummaryEditor({
           </button>
         </div>
 
-        <div className="flex flex-1 flex-col px-5 pb-5 pt-4">
+        <div className="flex min-h-0 flex-1 flex-col px-5 pb-5 pt-4">
           {shouldShowStatus ? (
             <div className="mb-4 flex items-start justify-end">
               <div className="rounded-full border-[2px] border-slate-200 bg-slate-50 px-4 py-2 text-sm font-bold text-slate-500">
@@ -159,9 +185,9 @@ export function SummaryEditor({
             </div>
           ) : null}
 
-          <div className="relative flex-1 overflow-hidden rounded-[28px] border-[2px] border-yellow-200 bg-white">
+          <div className="relative flex-1 overflow-hidden rounded-[28px] bg-white">
             {activeMode === 'edit' ? (
-              <div className="relative max-h-[56vh] min-h-[420px] overflow-y-auto p-5">
+              <div className="relative h-full min-h-0 overflow-y-auto p-5">
                 <div className="pointer-events-none absolute inset-0 mt-1 opacity-20 [background-image:linear-gradient(transparent_27px,#fbbf24_28px)] [background-size:100%_28px]" />
                 <textarea
                   className="relative z-10 min-h-full w-full resize-none border-none bg-transparent font-mono text-[0.98rem] leading-7 text-slate-700 outline-none"
@@ -171,7 +197,7 @@ export function SummaryEditor({
                 />
               </div>
             ) : (
-              <div className="max-h-[56vh] min-h-[420px] overflow-y-auto px-5 pb-7 pt-5">
+              <div className="h-full min-h-0 overflow-y-auto px-4 pb-4 pt-3 md:px-[1.15rem]">
                 {renderSummaryMarkdown(markdown)}
               </div>
             )}

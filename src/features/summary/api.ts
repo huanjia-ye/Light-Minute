@@ -1,6 +1,6 @@
 import { resolveChatCompletionsUrl, getProviderLabel } from '../../lib/openaiCompatible';
 import { sleep } from '../../lib/storage';
-import type { MeetingRecord, MeetingSummary, SummaryTemplateId } from '../../types/meeting';
+import type { MeetingRecord, MeetingSummary } from '../../types/meeting';
 import type { AppSettings } from '../../types/settings';
 import { normalizeSettings } from '../settings/store';
 
@@ -39,7 +39,6 @@ function buildSection(title: string, bullets: string[]) {
 
 function buildSummaryMarkdown(
   meeting: MeetingRecord,
-  templateId: SummaryTemplateId,
   providerLabel: string,
   model: string,
   customPrompt: string,
@@ -56,15 +55,8 @@ function buildSummaryMarkdown(
     `- Transcript segments processed: ${meeting.segments.length}.`,
   ];
 
-  const templateLead =
-    templateId === 'project-sync'
-      ? 'Project sync summary with clear delivery notes and next steps.'
-      : 'Standard meeting summary with key points, decisions and action items.';
-
   return [
     `# ${meeting.title}`,
-    '',
-    `> ${templateLead}`,
     '',
     '## Overview',
     `${overview}.`,
@@ -324,7 +316,6 @@ export async function generateMeetingSummary(
   const providerLabel = getProviderLabel(resolvedSettings.provider);
   const markdown = buildSummaryMarkdown(
     meeting,
-    resolvedSettings.templateId,
     providerLabel,
     resolvedSettings.model,
     customPrompt,

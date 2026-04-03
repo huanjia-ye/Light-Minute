@@ -14,18 +14,12 @@ interface TranscriptListProps {
 
 const transcriptPalettes = [
   {
-    speaker: 'LILIAN',
-    labelClass: 'text-pink-500',
     bubbleClass: 'border-pink-200 bg-pink-50',
   },
   {
-    speaker: 'ALEX',
-    labelClass: 'text-blue-600',
     bubbleClass: 'border-blue-200 bg-blue-50',
   },
   {
-    speaker: 'SAM',
-    labelClass: 'text-green-600',
     bubbleClass: 'border-green-200 bg-green-50',
   },
 ];
@@ -44,7 +38,7 @@ export function TranscriptList({
   const virtualizer = useVirtualizer({
     count: segments.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 148,
+    estimateSize: () => 108,
     getItemKey: (index) => segments[index]?.id ?? index,
     overscan: 5,
   });
@@ -76,10 +70,10 @@ export function TranscriptList({
       className={`flex flex-1 flex-col border-[2px] ${
         surface === 'card'
           ? 'overflow-hidden rounded-[26px] border-pink-100 bg-white shadow-macaron-button-slate'
-          : 'overflow-visible rounded-none border-transparent bg-transparent'
+          : 'overflow-hidden rounded-none border-transparent bg-transparent'
       }`}
     >
-      <div className="max-h-[56vh] flex-1 overflow-y-auto py-4 pl-1 pr-5" ref={parentRef}>
+      <div className="min-h-0 flex-1 overflow-y-auto py-3 pl-1 pr-4" ref={parentRef}>
         <div className="relative" style={{ height: `${virtualizer.getTotalSize()}px` }}>
           {virtualizer.getVirtualItems().map((virtualItem) => {
             const segment = segments[virtualItem.index];
@@ -88,29 +82,22 @@ export function TranscriptList({
             return (
               <div
                 key={segment.id}
-                className="absolute left-0 top-0 -ml-8 w-[calc(100%+2rem)] pb-4"
+                className="absolute left-0 top-0 -ml-6 w-[calc(100%+1.5rem)] pb-3"
                 data-index={virtualItem.index}
                 ref={virtualizer.measureElement}
                 style={{ transform: `translateY(${virtualItem.start}px)` }}
               >
-                <div className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-4">
-                  <div className="pt-1 text-right">
-                    <span className="font-mono text-sm font-bold text-slate-400">
+                <div className="grid grid-cols-[3.3rem_minmax(0,1fr)] items-start gap-3">
+                  <div className="pt-3 text-right">
+                    <span className="font-mono text-[0.72rem] font-medium leading-none tracking-[-0.03em] text-slate-400">
                       {formatTimestamp(segment.startTime).replace(/^\[|\]$/g, '')}
                     </span>
                   </div>
 
-                  <div className="min-w-0">
-                    <p
-                      className={`mb-2 text-xs font-bold uppercase tracking-[0.22em] ${palette.labelClass}`}
-                    >
-                      {palette.speaker}
-                    </p>
-                    <div
-                      className={`inline-block max-w-[21rem] rounded-[24px] rounded-tl-none border-[1.5px] px-5 py-4 text-[1.05rem] leading-8 text-slate-700 shadow-sm ${palette.bubbleClass}`}
-                    >
-                      {segment.text}
-                    </div>
+                  <div
+                    className={`inline-block w-fit max-w-[min(100%,34rem)] rounded-[22px] border-[1.5px] px-4 py-3 text-[0.92rem] leading-7 text-slate-700 shadow-sm ${palette.bubbleClass}`}
+                  >
+                    {segment.text}
                   </div>
                 </div>
               </div>

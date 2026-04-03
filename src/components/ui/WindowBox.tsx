@@ -39,7 +39,7 @@ export function WindowBox({
         <div className="w-12" />
       </div>
 
-      <div className={`relative flex-1 overflow-auto bg-white/50 ${bodyClassName}`}>
+      <div className={`relative flex-1 min-h-0 overflow-hidden bg-white/50 ${bodyClassName}`}>
         <div
           className="pointer-events-none absolute inset-0 opacity-20"
           style={{

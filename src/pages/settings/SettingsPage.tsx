@@ -173,7 +173,31 @@ export function SettingsPage() {
                     <option value="en-US">English</option>
                   </select>
                   <p className="mt-3 text-sm text-slate-500">
-                    Live recording prefers browser speech recognition by default. English can optionally use a local whisper runtime if you configure one.
+                    Live recording now prefers the local realtime whisper adapter when its runtime is available for the chosen language, then falls back to the local whisper chunk path for English or browser speech recognition.
+                  </p>
+                </div>
+
+                <div className="rounded-[24px] border-[2px] border-slate-200 bg-white p-6 shadow-macaron-button-slate">
+                  <label className="mb-3 block text-lg font-bold text-slate-800" htmlFor="liveTranscriptionRoute">
+                    Live transcription route
+                  </label>
+                  <select
+                    id="liveTranscriptionRoute"
+                    className="w-full rounded-[18px] border-[2px] border-slate-200 bg-white px-4 py-3 text-slate-700 outline-none focus:border-green-300"
+                    value={draft.liveTranscriptionRoute}
+                    onChange={(event) =>
+                      setDraft((current) => ({
+                        ...current,
+                        liveTranscriptionRoute: event.target.value as AppSettings['liveTranscriptionRoute'],
+                      }))
+                    }
+                  >
+                    <option value="prefer-realtime">Prefer realtime</option>
+                    <option value="realtime-only">Realtime only</option>
+                    <option value="fallback-only">Fallback only</option>
+                  </select>
+                  <p className="mt-3 text-sm text-slate-500">
+                    Use realtime only when you want a clean accuracy test without automatic fallback. Use fallback only for side-by-side comparison against browser or chunk engines.
                   </p>
                 </div>
 

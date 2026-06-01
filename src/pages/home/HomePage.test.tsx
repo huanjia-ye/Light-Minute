@@ -87,6 +87,81 @@ describe('home page', () => {
     expect(screen.getByRole('button', { name: /pause/i })).toBeInTheDocument();
   });
 
+  it('shows realtime diagnostics and non-fatal warnings during an active session', () => {
+    useSettingsStore.setState({
+      settings: {
+        ...defaultSettings,
+        liveTranscriptionRoute: 'realtime-only',
+      },
+    });
+    useRecordingStore.setState({
+      status: 'recording',
+      activeMeetingTitle: 'Diagnostics check',
+      elapsedSeconds: 12,
+      session: {
+        sessionId: 'rt-diag',
+        engineMode: 'local-whisper-stream',
+        language: 'en-US',
+        startedAt: new Date().toISOString(),
+        status: 'running',
+      },
+      transportStatus: 'open',
+      sessionCapabilities: {
+        supportsPartials: true,
+        supportsFinals: true,
+        acceptedLanguage: 'en-US',
+      },
+      transportMetrics: {
+        lastAcceptedSeq: 14,
+        queueDepth: 1,
+        bufferedMs: 400,
+        lastPartialAudioMs: 2000,
+        lastPartialInferenceMs: 4100,
+        lastPartialEmitLatencyMs: 2500,
+        stalePartialDropCount: 3,
+        lastFinalizeReason: 'force',
+        lastFinalAudioMs: 5000,
+        lastFinalInferenceMs: 8600,
+        lastFinalEmitLatencyMs: 3600,
+      },
+      lastWarning: {
+        source: 'asr',
+        message: 'Partial preview is temporarily unavailable. Final transcription will continue.',
+        recoverable: true,
+      },
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/']}>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByTestId('recording-warning')).toHaveTextContent(
+      'asr: Partial preview is temporarily unavailable. Final transcription will continue.',
+    );
+    expect(screen.getByText(/Light-Minute realtime whisper \| Realtime only/i)).toBeInTheDocument();
+    expect(screen.getByTestId('realtime-diagnostics')).toHaveTextContent('Session: en-US');
+    expect(screen.getByTestId('realtime-diagnostics')).toHaveTextContent('Route: Realtime only');
+    expect(screen.getByTestId('realtime-diagnostics')).toHaveTextContent('Engine: local-whisper-stream');
+    expect(screen.getByTestId('realtime-diagnostics')).toHaveTextContent('Partials: On');
+    expect(screen.getByTestId('realtime-diagnostics')).toHaveTextContent('Queue: 1');
+    expect(screen.getByTestId('realtime-diagnostics')).toHaveTextContent('Buffered: 400ms');
+    expect(screen.getByTestId('realtime-diagnostics')).toHaveTextContent('Seq: 14');
+    expect(screen.getByTestId('realtime-diagnostics')).toHaveTextContent(
+      'P: 4.1s infer / 2.0s audio / 2.5s emit',
+    );
+    expect(screen.getByTestId('realtime-diagnostics')).toHaveTextContent(
+      'F: 8.6s infer / 5.0s audio / 3.6s emit',
+    );
+    expect(screen.getByTestId('realtime-diagnostics')).toHaveTextContent('Split: force');
+    expect(screen.getByTestId('realtime-diagnostics')).toHaveTextContent('Stale partials: 3');
+  });
+
   it(
     'imports an audio file into the same meeting detail flow',
     async () => {

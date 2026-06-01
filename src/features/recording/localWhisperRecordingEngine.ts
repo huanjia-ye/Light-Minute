@@ -2,10 +2,12 @@ import { createId } from '../../lib/storage';
 import { resolveBrowserLocalWhisperInferenceUrl } from '../../lib/openaiCompatible';
 import type { TranscriptSegment } from '../../types/meeting';
 import { hasUsableTranscriptText, sanitizeTranscriptText } from './transcriptSanitizer';
+import { resolveWhisperInferenceParams } from './whisperLanguage';
 import type {
   RecordingEngine,
   RecordingEngineCallbacks,
   RecordingEngineSnapshot,
+  RecordingEngineStartOptions,
 } from './engineTypes';
 
 type EngineState = 'idle' | 'recording' | 'paused';
@@ -72,7 +74,7 @@ function buildSegmentsFromResponse(
 }
 
 export class LocalWhisperRecordingEngine implements RecordingEngine {
-  readonly mode = 'local-whisper-live' as const;
+  readonly mode = 'local-whisper-chunk' as const;
 
   private state: EngineState = 'idle';
   private elapsedSeconds = 0;
@@ -84,6 +86,8 @@ export class LocalWhisperRecordingEngine implements RecordingEngine {
   private chunkQueue: Promise<void> = Promise.resolve();
   private currentChunkStartedAt = 0;
   private endpoint: string;
+  private sessionId = 'local-whisper-chunk-session';
+  private language = 'en-US';
 
   constructor(endpoint: string) {
     this.endpoint = endpoint;
@@ -97,15 +101,18 @@ export class LocalWhisperRecordingEngine implements RecordingEngine {
     );
   }
 
-  start(callbacks: RecordingEngineCallbacks) {
+  async start(options: RecordingEngineStartOptions) {
     if (!this.isSupported()) {
       throw new Error('Light-Minute local whisper live transcription is not supported in this browser.');
     }
 
     this.reset();
     this.state = 'recording';
-    this.callbacks = callbacks;
+    this.callbacks = options.callbacks;
+    this.sessionId = options.sessionId;
+    this.language = options.language;
     this.currentChunkStartedAt = 0;
+    this.callbacks.onMicStatus?.('requesting_permission');
     this.startTicking();
 
     void navigator.mediaDevices
@@ -117,6 +124,8 @@ export class LocalWhisperRecordingEngine implements RecordingEngine {
         }
 
         this.stream = stream;
+        this.callbacks?.onMicStatus?.('ready');
+        this.callbacks?.onVoiceState?.('silence');
         const preferredMimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
           ? 'audio/webm;codecs=opus'
           : MediaRecorder.isTypeSupported('audio/webm')
@@ -148,6 +157,9 @@ export class LocalWhisperRecordingEngine implements RecordingEngine {
         this.recorder.start(3000);
       })
       .catch((error) => {
+        this.callbacks?.onMicStatus?.(
+          error instanceof DOMException && error.name === 'NotAllowedError' ? 'denied' : 'error',
+        );
         this.callbacks?.onError?.(
           error instanceof Error
             ? `Microphone access failed. ${error.message}`
@@ -243,6 +255,7 @@ export class LocalWhisperRecordingEngine implements RecordingEngine {
 
   private async processChunk(envelope: ChunkEnvelope) {
     try {
+      const whisperParams = resolveWhisperInferenceParams(this.language);
       const formData = new FormData();
       formData.append(
         'file',
@@ -251,9 +264,12 @@ export class LocalWhisperRecordingEngine implements RecordingEngine {
       formData.append('response_format', 'json');
       formData.append('temperature', '0.0');
       formData.append('temperature_inc', '0.2');
-      formData.append('detect_language', 'true');
+      formData.append('detect_language', whisperParams.detectLanguage);
       formData.append('diarize', 'false');
       formData.append('split_on_word', 'true');
+      if (whisperParams.language) {
+        formData.append('language', whisperParams.language);
+      }
 
       const response = await fetch(resolveBrowserLocalWhisperInferenceUrl(this.endpoint), {
         method: 'POST',
@@ -267,7 +283,22 @@ export class LocalWhisperRecordingEngine implements RecordingEngine {
       const payload = (await response.json()) as WhisperResponse;
       const segments = buildSegmentsFromResponse(payload, envelope);
 
-      segments.forEach((segment) => this.callbacks?.onSegment(segment));
+      segments.forEach((segment) => {
+        if (this.callbacks?.onAsrEvent) {
+          this.callbacks.onAsrEvent({
+            type: 'final',
+            sessionId: this.sessionId,
+            groupId: segment.id,
+            utteranceId: segment.id,
+            revision: 1,
+            startMs: segment.startTime * 1000,
+            endMs: segment.endTime * 1000,
+            text: segment.text,
+          });
+        } else {
+          this.callbacks?.onSegment?.(segment);
+        }
+      });
       this.emittedCount += segments.length;
     } catch (error) {
       this.callbacks?.onError?.(buildChunkErrorMessage(error));
@@ -284,5 +315,7 @@ export class LocalWhisperRecordingEngine implements RecordingEngine {
     this.stopTracks();
     this.chunkQueue = Promise.resolve();
     this.currentChunkStartedAt = 0;
+    this.sessionId = 'local-whisper-chunk-session';
+    this.language = 'en-US';
   }
 }

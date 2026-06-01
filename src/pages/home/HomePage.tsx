@@ -6,12 +6,11 @@ import { RecordingControls } from '../../components/recording/RecordingControls'
 import { TranscriptList } from '../../components/transcript/TranscriptList';
 import { CuteButton } from '../../components/ui/CuteButton';
 import { WindowBox } from '../../components/ui/WindowBox';
-import { useCreateMeetingMutation, useImportAudioMutation } from '../../features/meetings/hooks';
-import { getRecordingEngine } from '../../features/recording/recordingEngine';
+import { useImportAudioMutation } from '../../features/meetings/hooks';
+import { useRecordingSessionController } from '../../features/recording/useRecordingSessionController';
 import { useRecordingStore } from '../../features/recording/store';
 import { normalizeSettings, useSettingsStore } from '../../features/settings/store';
 import { formatDuration } from '../../lib/format';
-import { sleep } from '../../lib/storage';
 
 const OPEN_IMPORT_EVENT = 'light-minute:open-import';
 
@@ -37,93 +36,110 @@ function getStatusLabel(status: ReturnType<typeof useRecordingStore.getState>['s
   }
 }
 
+function getMicStatusLabel(micStatus: ReturnType<typeof useRecordingStore.getState>['micStatus']) {
+  switch (micStatus) {
+    case 'requesting_permission':
+      return 'Mic: Requesting';
+    case 'ready':
+      return 'Mic: Ready';
+    case 'denied':
+      return 'Mic: Denied';
+    case 'ended':
+      return 'Mic: Ended';
+    case 'error':
+      return 'Mic: Error';
+    default:
+      return 'Mic: Idle';
+  }
+}
+
+function getTransportStatusLabel(
+  transportStatus: ReturnType<typeof useRecordingStore.getState>['transportStatus'],
+) {
+  switch (transportStatus) {
+    case 'connecting':
+      return 'Transport: Connecting';
+    case 'open':
+      return 'Transport: Open';
+    case 'draining':
+      return 'Transport: Draining';
+    case 'closed':
+      return 'Transport: Closed';
+    case 'error':
+      return 'Transport: Error';
+    default:
+      return 'Transport: Idle';
+  }
+}
+
+function getVoiceStateLabel(voiceState: ReturnType<typeof useRecordingStore.getState>['voiceState']) {
+  switch (voiceState) {
+    case 'speech':
+      return 'Voice: Speech';
+    case 'silence':
+      return 'Voice: Silence';
+    default:
+      return 'Voice: Unknown';
+  }
+}
+
+function formatBufferedMs(bufferedMs: number) {
+  if (bufferedMs < 1000) {
+    return `${bufferedMs}ms`;
+  }
+
+  return `${(bufferedMs / 1000).toFixed(1)}s`;
+}
+
+function formatOptionalBufferedMs(bufferedMs: number | null) {
+  if (bufferedMs == null) {
+    return '--';
+  }
+
+  return formatBufferedMs(bufferedMs);
+}
+
+function formatFinalizeReason(finalizeReason: string | null | undefined) {
+  if (!finalizeReason) {
+    return '--';
+  }
+
+  return finalizeReason;
+}
+
+function formatRealtimeStageMetrics(input: {
+  label: string;
+  audioMs: number | null;
+  inferenceMs: number | null;
+  emitLatencyMs: number | null;
+}) {
+  return `${input.label}: ${formatOptionalBufferedMs(input.inferenceMs)} infer / ${formatOptionalBufferedMs(input.audioMs)} audio / ${formatOptionalBufferedMs(input.emitLatencyMs)} emit`;
+}
+
 export function HomePage() {
   const navigate = useNavigate();
-  const createMeetingMutation = useCreateMeetingMutation();
   const audioImportInputRef = useRef<HTMLInputElement | null>(null);
   const rawSettings = useSettingsStore((state) => state.settings);
   const settings = useMemo(() => normalizeSettings(rawSettings), [rawSettings]);
-  const recordingEngine = useMemo(
-    () => getRecordingEngine(settings.transcriptionEndpoint, settings.liveTranscriptionLanguage),
-    [settings.liveTranscriptionLanguage, settings.transcriptionEndpoint],
-  );
   const importAudioMutation = useImportAudioMutation(settings);
   const [meetingTitle, setMeetingTitle] = useState(createMeetingTitle());
   const recording = useRecordingStore((state) => state);
-
-  const transcriptText = useMemo(
-    () => recording.segments.map((segment) => `[${segment.startTime}s] ${segment.text}`).join('\n'),
-    [recording.segments],
-  );
-
-  const showHero =
-    recording.segments.length === 0 &&
-    !['recording', 'paused', 'finalizing', 'saving'].includes(recording.status);
-
-  const handleStart = () => {
-    const nextTitle = meetingTitle.trim() || createMeetingTitle();
-
-    setMeetingTitle(nextTitle);
-    recording.startSession(nextTitle);
-
-    try {
-      recordingEngine.start({
-        onSegment: (segment) => recording.appendSegment(segment),
-        onTick: (elapsedSeconds) => recording.updateElapsed(elapsedSeconds),
-        onError: (message) => {
-          recording.setStatus('error', message);
-          recordingEngine.stop();
-        },
-      });
-    } catch (error) {
-      recording.resetSession();
-      recording.setStatus(
-        'error',
-        error instanceof Error ? error.message : 'Recording could not be started.',
-      );
-    }
-  };
-
-  const handlePause = () => {
-    recordingEngine.pause();
-    recording.setStatus('paused');
-  };
-
-  const handleResume = () => {
-    recordingEngine.resume();
-    recording.setStatus('recording');
-  };
-
-  const handleStop = async () => {
-    const title = recording.activeMeetingTitle || meetingTitle || createMeetingTitle();
-    const segments = [...recording.segments];
-    const snapshot = await recordingEngine.stop();
-    const elapsedSeconds = Math.max(recording.elapsedSeconds, snapshot.elapsedSeconds);
-
-    recording.setStatus('finalizing');
-    await sleep(850);
-    recording.setStatus('saving');
-
-    try {
-      const meeting = await createMeetingMutation.mutateAsync({
-        title,
-        source: 'recording',
-        transcriptOrigin:
-          snapshot.mode === 'local-whisper-live' ? 'local-whisper' : snapshot.mode,
-        segments,
-        durationSeconds: elapsedSeconds,
-      });
-
-      recording.resetSession();
-      setMeetingTitle(createMeetingTitle());
-      navigate(`/meetings/${meeting.id}`);
-    } catch (error) {
-      recording.setStatus(
-        'error',
-        error instanceof Error ? error.message : 'Meeting could not be saved.',
-      );
-    }
-  };
+  const {
+    engineLabel,
+    routeLabel,
+    transcriptText,
+    showHero,
+    handleStart,
+    handlePause,
+    handleResume,
+    handleStop,
+  } = useRecordingSessionController({
+    settings,
+    meetingTitle,
+    createMeetingTitle,
+    onMeetingSaved: (meetingId) => navigate(`/meetings/${meetingId}`),
+    onMeetingTitleReset: setMeetingTitle,
+  });
 
   const handleImport = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -194,11 +210,13 @@ export function HomePage() {
               </span>
             </h1>
             <p className="mx-auto mt-4 max-w-xl text-[1.15rem] leading-8 text-slate-500">
-              Real-time transcription and AI summaries. Tap the mic to start your next great
-              meeting.
+              Real-time transcription and AI summaries. 
+              <br />
+              Tap the mic to start your next great meeting.
             </p>
             {recording.status === 'error' && recording.errorMessage ? (
               <div className="mx-auto mt-6 inline-flex max-w-xl items-center rounded-full border-[2px] border-red-200 bg-red-50 px-5 py-3 text-sm font-semibold text-red-600 shadow-macaron-button-slate">
+                {recording.lastError?.source ? `${recording.lastError.source}: ` : ''}
                 {recording.errorMessage}
               </div>
             ) : null}
@@ -240,7 +258,7 @@ export function HomePage() {
                 icon={Clipboard}
                 label="Copy"
                 variant="neutral"
-                disabled={!recording.segments.length}
+                disabled={!transcriptText.trim()}
                 onClick={handleCopyTranscript}
               />
             </div>
@@ -260,18 +278,22 @@ export function HomePage() {
 
             <div className="flex flex-wrap gap-3">
               <div className="flex items-center gap-2 rounded-full border-[2px] border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-macaron-button-slate">
+                <span>{getMicStatusLabel(recording.micStatus)}</span>
+              </div>
+              <div className="flex items-center gap-2 rounded-full border-[2px] border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-macaron-button-slate">
+                <span>{getTransportStatusLabel(recording.transportStatus)}</span>
+              </div>
+              <div className="flex items-center gap-2 rounded-full border-[2px] border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-macaron-button-slate">
+                <span>{getVoiceStateLabel(recording.voiceState)}</span>
+              </div>
+              <div className="flex items-center gap-2 rounded-full border-[2px] border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-macaron-button-slate">
                 <Mic2 size={14} />
                 <span>{settings.micDevice}</span>
               </div>
               <div className="flex items-center gap-2 rounded-full border-[2px] border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-macaron-button-slate">
                 <Sparkles size={14} />
                 <span>
-                  {recordingEngine.mode === 'local-whisper-live'
-                    ? 'Light-Minute live whisper'
-                    : recordingEngine.mode === 'browser-speech'
-                      ? `live speech ${settings.liveTranscriptionLanguage === 'auto' ? '(auto)' : `(${settings.liveTranscriptionLanguage})`}`
-                      : 'demo mode'}{' '}
-                  | {settings.provider}
+                  {engineLabel} | {routeLabel}
                 </span>
               </div>
             </div>
@@ -279,12 +301,65 @@ export function HomePage() {
 
           {recording.status === 'error' && recording.errorMessage ? (
             <div className="mb-5 flex items-center justify-between gap-4 rounded-2xl border-[2px] border-red-200 bg-red-50 px-5 py-4 text-sm text-red-600">
-              <span>{recording.errorMessage}</span>
+              <span>
+                {recording.lastError?.source ? `${recording.lastError.source}: ` : ''}
+                {recording.errorMessage}
+              </span>
               <CuteButton
                 label="Open settings"
                 variant="neutral"
                 onClick={() => navigate('/settings')}
               />
+            </div>
+          ) : null}
+
+          {recording.status !== 'error' && recording.lastWarning ? (
+            <div
+              className="mb-5 rounded-2xl border-[2px] border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-700"
+              data-testid="recording-warning"
+            >
+              <span className="font-semibold">
+                {recording.lastWarning.source ? `${recording.lastWarning.source}: ` : ''}
+              </span>
+              <span>{recording.lastWarning.message}</span>
+            </div>
+          ) : null}
+
+          {recording.sessionCapabilities ? (
+            <div
+              className="mb-5 flex flex-wrap items-center gap-3 rounded-2xl border-[2px] border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-600"
+              data-testid="realtime-diagnostics"
+            >
+              <span>Route: {routeLabel}</span>
+              <span>Engine: {recording.session?.engineMode ?? 'pending'}</span>
+              <span>Session: {recording.sessionCapabilities.acceptedLanguage}</span>
+              <span>Partials: {recording.sessionCapabilities.supportsPartials ? 'On' : 'Off'}</span>
+              <span>Finals: {recording.sessionCapabilities.supportsFinals ? 'On' : 'Off'}</span>
+              {recording.transportMetrics ? (
+                <>
+                  <span>Queue: {recording.transportMetrics.queueDepth}</span>
+                  <span>Buffered: {formatBufferedMs(recording.transportMetrics.bufferedMs)}</span>
+                  <span>Seq: {recording.transportMetrics.lastAcceptedSeq}</span>
+                  <span>
+                    {formatRealtimeStageMetrics({
+                      label: 'P',
+                      audioMs: recording.transportMetrics.lastPartialAudioMs,
+                      inferenceMs: recording.transportMetrics.lastPartialInferenceMs,
+                      emitLatencyMs: recording.transportMetrics.lastPartialEmitLatencyMs,
+                    })}
+                  </span>
+                  <span>
+                    {formatRealtimeStageMetrics({
+                      label: 'F',
+                      audioMs: recording.transportMetrics.lastFinalAudioMs,
+                      inferenceMs: recording.transportMetrics.lastFinalInferenceMs,
+                      emitLatencyMs: recording.transportMetrics.lastFinalEmitLatencyMs,
+                    })}
+                  </span>
+                  <span>Split: {formatFinalizeReason(recording.transportMetrics.lastFinalizeReason)}</span>
+                  <span>Stale partials: {recording.transportMetrics.stalePartialDropCount}</span>
+                </>
+              ) : null}
             </div>
           ) : null}
 

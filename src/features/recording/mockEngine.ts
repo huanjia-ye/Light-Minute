@@ -1,10 +1,27 @@
 import type { TranscriptSegment } from '../../types/meeting';
 import { buildMockRecordingScript } from './mockScript';
-import type { RecordingEngine } from './engineTypes';
+import type { RecordingEngine, RecordingEngineCallbacks, RecordingEngineStartOptions } from './engineTypes';
 
-interface EngineCallbacks {
-  onSegment: (segment: TranscriptSegment) => void;
-  onTick: (elapsedSeconds: number) => void;
+function emitFinalSegment(
+  callbacks: RecordingEngineCallbacks,
+  sessionId: string,
+  segment: TranscriptSegment,
+) {
+  if (callbacks.onAsrEvent) {
+    callbacks.onAsrEvent({
+      type: 'final',
+      sessionId,
+      groupId: segment.id,
+      utteranceId: segment.id,
+      revision: 1,
+      startMs: segment.startTime * 1000,
+      endMs: segment.endTime * 1000,
+      text: segment.text,
+    });
+    return;
+  }
+
+  callbacks.onSegment?.(segment);
 }
 
 type EngineState = 'idle' | 'recording' | 'paused';
@@ -17,17 +34,21 @@ class MockRecordingEngine implements RecordingEngine {
   private tickTimer: number | null = null;
   private segmentTimer: number | null = null;
   private script: TranscriptSegment[] = [];
-  private callbacks: EngineCallbacks | null = null;
+  private callbacks: RecordingEngineCallbacks | null = null;
+  private sessionId = 'mock-session';
 
   isSupported() {
     return true;
   }
 
-  start(callbacks: EngineCallbacks) {
+  async start(options: RecordingEngineStartOptions) {
     this.reset();
     this.state = 'recording';
-    this.callbacks = callbacks;
+    this.callbacks = options.callbacks;
+    this.sessionId = options.sessionId;
     this.script = buildMockRecordingScript();
+    this.callbacks.onMicStatus?.('ready');
+    this.callbacks.onVoiceState?.('silence');
     this.startTicking();
     this.scheduleSegment();
   }
@@ -84,7 +105,9 @@ class MockRecordingEngine implements RecordingEngine {
       }
 
       const nextSegment = this.script[this.cursor];
-      this.callbacks?.onSegment(nextSegment);
+      if (this.callbacks) {
+        emitFinalSegment(this.callbacks, this.sessionId, nextSegment);
+      }
       this.cursor += 1;
       this.scheduleSegment();
     }, 1500);
@@ -112,6 +135,7 @@ class MockRecordingEngine implements RecordingEngine {
     this.cursor = 0;
     this.script = [];
     this.callbacks = null;
+    this.sessionId = 'mock-session';
   }
 }
 

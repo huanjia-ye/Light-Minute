@@ -1,8 +1,15 @@
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
+import {
+  buildPreferredWhisperModelCandidates,
+  getWhisperRuntimeProfile,
+  resolvePreferredWhisperThreadCount,
+} from './local-whisper-runtime-config.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, '..');
@@ -10,6 +17,7 @@ const localBinDir = path.join(projectRoot, '.tmp', 'local-bin');
 const ffmpegShimPath = path.join(localBinDir, 'ffmpeg.cmd');
 const whisperBaseUrl = 'http://127.0.0.1:8178';
 const parakeetBaseUrl = 'http://127.0.0.1:8179';
+const realtimeBaseUrl = 'http://127.0.0.1:8180';
 
 function log(message) {
   process.stdout.write(`[light-minute] ${message}\n`);
@@ -32,9 +40,6 @@ function pathHasNonAsciiCharacters(targetPath) {
 }
 
 function ensureAsciiProjectRoot() {
-  const driveLetter = 'M:';
-  const driveRoot = `${driveLetter}\\`;
-
   if (!pathHasNonAsciiCharacters(projectRoot)) {
     return {
       root: projectRoot,
@@ -42,60 +47,65 @@ function ensureAsciiProjectRoot() {
     };
   }
 
-  const substResult = runCommand('cmd.exe', ['/d', '/s', '/c', 'subst']);
-  const normalizedProjectRoot = projectRoot.replace(/\//g, '\\').toLowerCase();
-  const existingLine = substResult.stdout
-    .split(/\r?\n/u)
-    .map((line) => line.trim())
-    .find((line) => line.toLowerCase().startsWith(`${driveLetter.toLowerCase()} =>`));
+  const publicRoot = process.env.PUBLIC || 'C:\\Users\\Public';
+  const aliasRoot = path.join(publicRoot, 'light-minute-workspaces');
+  const aliasName = `repo-${createHash('sha1').update(projectRoot).digest('hex').slice(0, 8)}`;
+  const aliasPath = path.join(aliasRoot, aliasName);
+  const projectRealPath = realpathSync(projectRoot);
 
-  if (existingLine) {
-    if (existingLine.toLowerCase().includes(normalizedProjectRoot)) {
-      log(`Reusing ASCII repo alias ${driveLetter} for the Light-Minute workspace.`);
-      return {
-        root: driveRoot,
-        cleanup: () => {},
-      };
+  try {
+    mkdirSync(aliasRoot, { recursive: true });
+
+    if (existsSync(aliasPath)) {
+      try {
+        if (realpathSync(aliasPath) === projectRealPath) {
+          log(`Reusing ASCII repo alias ${aliasPath} for the Light-Minute workspace.`);
+          return {
+            root: aliasPath,
+            cleanup: () => {},
+          };
+        }
+      } catch {
+        // Recreate an invalid alias below.
+      }
+
+      rmSync(aliasPath, { recursive: true, force: true });
     }
 
-    log(`${driveLetter} is already mapped elsewhere, so the whisper server may still struggle with Unicode paths.`);
+    symlinkSync(projectRoot, aliasPath, 'junction');
+    log(`Created temporary ASCII repo alias ${aliasPath} for the Light-Minute workspace.`);
+    return {
+      root: aliasPath,
+      cleanup: () => {
+        rmSync(aliasPath, { recursive: true, force: true });
+      },
+    };
+  } catch {
+    log(`Failed to create ASCII repo alias at ${aliasPath}; continuing with the project path.`);
     return {
       root: projectRoot,
       cleanup: () => {},
     };
   }
-
-  const createResult = runCommand('cmd.exe', [
-    '/d',
-    '/s',
-    '/c',
-    `subst ${driveLetter} "${projectRoot}"`,
-  ]);
-
-  if (createResult.status !== 0) {
-    log(`Failed to create ASCII repo alias ${driveLetter}; continuing with the project path.`);
-    return {
-      root: projectRoot,
-      cleanup: () => {},
-    };
-  }
-
-  log(`Created temporary ASCII repo alias ${driveLetter} for the Light-Minute workspace.`);
-  return {
-    root: driveRoot,
-    cleanup: () => {
-      runCommand('cmd.exe', ['/d', '/s', '/c', `subst ${driveLetter} /d`]);
-    },
-  };
 }
 
 const projectRootHandle = ensureAsciiProjectRoot();
 const resolvedProjectRoot = projectRootHandle.root;
 const whisperPackageDir = path.join(resolvedProjectRoot, 'runtime', 'whisper-server-package');
 const whisperExePath = path.join(whisperPackageDir, 'whisper-server.exe');
-const whisperModelArg = path.join('models', 'ggml-tiny.en.bin');
+const whisperModelCandidates = buildPreferredWhisperModelCandidates(process.env.LIGHT_WHISPER_MODEL);
+const whisperModelArg =
+  whisperModelCandidates.find((candidate) => existsSync(path.join(whisperPackageDir, candidate))) ??
+  path.join('models', 'ggml-tiny.en.bin');
 const whisperModelPath = path.join(whisperPackageDir, whisperModelArg);
+const whisperRuntimeProfile = getWhisperRuntimeProfile(whisperModelArg);
+const whisperThreadCount = resolvePreferredWhisperThreadCount(
+  process.env.LIGHT_WHISPER_THREADS,
+  typeof os.availableParallelism === 'function' ? os.availableParallelism() : os.cpus().length,
+);
+const realtimeSupportedLanguages = whisperRuntimeProfile.supportedLanguages.join(',');
 const ffmpegExePath = path.join(resolvedProjectRoot, 'runtime', 'bin', 'ffmpeg.exe');
+const realtimeServerScript = path.join(projectRoot, 'scripts', 'local-realtime-asr-server.mjs');
 
 async function isServerReachable(url) {
   try {
@@ -134,6 +144,10 @@ async function waitForWhisperServer(timeoutMs = 45000) {
   return waitForHttpServer(`${whisperBaseUrl}/`, timeoutMs);
 }
 
+async function waitForRealtimeServer(timeoutMs = 45000) {
+  return waitForHttpServer(`${realtimeBaseUrl}/__light_realtime/health`, timeoutMs);
+}
+
 async function startLocalWhisperIfNeeded() {
   if (await isServerReachable(`${whisperBaseUrl}/`)) {
     log('Reusing existing Light-Minute whisper server on 127.0.0.1:8178.');
@@ -149,6 +163,8 @@ async function startLocalWhisperIfNeeded() {
   const args = [
     '--model',
     whisperModelArg,
+    '--threads',
+    String(whisperThreadCount),
     '--host',
     '127.0.0.1',
     '--port',
@@ -160,7 +176,15 @@ async function startLocalWhisperIfNeeded() {
     args.push('--convert');
   }
 
-  log('Starting Light-Minute whisper server for local upload transcription...');
+  if (whisperRuntimeProfile.isEnglishOnly) {
+    log(
+      `Using english-only whisper model ${whisperRuntimeProfile.modelName}; realtime support is limited to ${whisperRuntimeProfile.supportedLanguages.join(', ')}.`,
+    );
+  }
+
+  log(
+    `Starting Light-Minute whisper server for local upload transcription with ${whisperModelArg} (${whisperThreadCount} threads)...`,
+  );
   const whisperProcess = spawn(whisperExePath, args, {
     cwd: whisperPackageDir,
     stdio: 'inherit',
@@ -178,6 +202,40 @@ async function startLocalWhisperIfNeeded() {
   }
 
   return whisperProcess;
+}
+
+async function startLocalRealtimeIfNeeded() {
+  if (await isServerReachable(`${realtimeBaseUrl}/__light_realtime/health`)) {
+    log('Reusing existing Light-Minute realtime ASR adapter on 127.0.0.1:8180.');
+    return null;
+  }
+
+  if (!existsSync(realtimeServerScript)) {
+    log('The realtime ASR adapter script is missing; realtime voice input will not be available.');
+    return null;
+  }
+
+  log('Starting Light-Minute realtime ASR adapter...');
+  const realtimeProcess = spawn(process.execPath, [realtimeServerScript], {
+    cwd: projectRoot,
+    stdio: 'inherit',
+      env: {
+        ...process.env,
+        LIGHT_REALTIME_PORT: '8180',
+        LIGHT_REALTIME_WHISPER_BASE_URL: whisperBaseUrl,
+        LIGHT_REALTIME_MODEL: path.basename(whisperModelArg),
+        LIGHT_REALTIME_SUPPORTED_LANGUAGES: realtimeSupportedLanguages,
+      },
+  });
+
+  const ready = await waitForRealtimeServer();
+  if (!ready) {
+    log('Local realtime ASR adapter did not become ready in time; realtime voice input may not be available.');
+  } else {
+    log('Light-Minute realtime ASR adapter is ready at http://127.0.0.1:8180.');
+  }
+
+  return realtimeProcess;
 }
 
 async function startLocalParakeetIfNeeded() {
@@ -274,6 +332,7 @@ function quoteWindowsArg(arg) {
 }
 
 const whisperProcess = await startLocalWhisperIfNeeded();
+const realtimeProcess = await startLocalRealtimeIfNeeded();
 const parakeetProcess = await startLocalParakeetIfNeeded();
 const viteCommand =
   process.platform === 'win32'
@@ -300,6 +359,7 @@ const viteProcess =
 const shutdown = () => {
   terminateChild(viteProcess);
   terminateChild(whisperProcess);
+  terminateChild(realtimeProcess);
   terminateChild(parakeetProcess);
   projectRootHandle.cleanup();
 };

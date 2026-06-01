@@ -19,30 +19,36 @@ const localStorageMock: Storage = {
   },
 };
 
-Object.defineProperty(window, 'localStorage', {
-  value: localStorageMock,
-  configurable: true,
-});
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'localStorage', {
+    value: localStorageMock,
+    configurable: true,
+  });
+}
 
-Object.defineProperty(navigator, 'clipboard', {
-  value: {
-    writeText: vi.fn().mockResolvedValue(undefined),
-  },
-  configurable: true,
-});
+if (typeof navigator !== 'undefined') {
+  Object.defineProperty(navigator, 'clipboard', {
+    value: {
+      writeText: vi.fn().mockResolvedValue(undefined),
+    },
+    configurable: true,
+  });
 
-Object.defineProperty(navigator, 'mediaDevices', {
-  value: {
-    enumerateDevices: vi.fn().mockResolvedValue([
-      { kind: 'audioinput', label: 'Default microphone' },
-      { kind: 'audioinput', label: 'USB microphone' },
-    ]),
-  },
-  configurable: true,
-});
+  Object.defineProperty(navigator, 'mediaDevices', {
+    value: {
+      enumerateDevices: vi.fn().mockResolvedValue([
+        { kind: 'audioinput', label: 'Default microphone' },
+        { kind: 'audioinput', label: 'USB microphone' },
+      ]),
+    },
+    configurable: true,
+  });
+}
 
 beforeEach(() => {
   localStorageMock.clear();
-  window.localStorage.clear();
+  if (typeof window !== 'undefined' && window.localStorage) {
+    window.localStorage.clear();
+  }
   vi.clearAllMocks();
 });

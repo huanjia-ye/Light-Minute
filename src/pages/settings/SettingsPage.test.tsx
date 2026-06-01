@@ -34,6 +34,7 @@ describe('settings page', () => {
     await user.clear(screen.getByRole('textbox', { name: /upload transcription model/i }));
     await user.type(screen.getByRole('textbox', { name: /upload transcription model/i }), 'whisper-1');
     await user.selectOptions(screen.getByRole('combobox', { name: /live transcription language/i }), 'zh-CN');
+    await user.selectOptions(screen.getByRole('combobox', { name: /live transcription route/i }), 'realtime-only');
     await user.clear(screen.getByRole('textbox', { name: /local or upload transcription endpoint/i }));
     await user.type(
       screen.getByRole('textbox', { name: /local or upload transcription endpoint/i }),
@@ -52,10 +53,11 @@ describe('settings page', () => {
       micDevice: 'USB microphone',
       transcriptionModel: 'whisper-1',
       liveTranscriptionLanguage: 'zh-CN',
+      liveTranscriptionRoute: 'realtime-only',
       transcriptionEndpoint: 'https://audio.example.com/v1',
       transcriptionApiKey: 'transcribe-key',
       recordingsPath: 'D:/Meetings',
-      allowDemoFallbacks: true,
+      allowDemoFallbacks: false,
     });
 
     await user.click(screen.getByRole('button', { name: /reset/i }));

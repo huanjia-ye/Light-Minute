@@ -56,4 +56,38 @@ describe('TranscriptList', () => {
     expect(rows[1]).toHaveAttribute('data-index', '1');
     expect(measureElement).toHaveBeenCalledTimes(2);
   });
+
+  it('marks partial transcript rows with a distinct visual treatment', () => {
+    render(
+      <TranscriptList
+        segments={[
+          {
+            id: 'segment-final',
+            startTime: 10,
+            endTime: 12,
+            text: 'Frozen final',
+            confidence: 0.93,
+          },
+          {
+            id: 'partial:rt-1:grp-1:2',
+            startTime: 13,
+            endTime: 14,
+            text: 'Live partial',
+            confidence: 0,
+          },
+        ]}
+        emptyTitle="Empty"
+        emptyText="Nothing yet"
+        disableAutoScroll
+      />,
+    );
+
+    const finalBubble = screen.getByText('Frozen final').closest('div[data-partial]');
+    const partialBubble = screen.getByText('Live partial').closest('div[data-partial]');
+
+    expect(finalBubble).toHaveAttribute('data-partial', 'false');
+    expect(finalBubble).not.toHaveClass('border-dashed');
+    expect(partialBubble).toHaveAttribute('data-partial', 'true');
+    expect(partialBubble).toHaveClass('border-dashed');
+  });
 });

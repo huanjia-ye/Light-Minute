@@ -24,6 +24,10 @@ const transcriptPalettes = [
   },
 ];
 
+function isPartialSegment(segment: TranscriptSegment) {
+  return segment.id.startsWith('partial:') || segment.confidence === 0;
+}
+
 export function TranscriptList({
   segments,
   emptyTitle,
@@ -78,6 +82,10 @@ export function TranscriptList({
           {virtualizer.getVirtualItems().map((virtualItem) => {
             const segment = segments[virtualItem.index];
             const palette = transcriptPalettes[virtualItem.index % transcriptPalettes.length];
+            const isPartial = isPartialSegment(segment);
+            const bubbleClass = isPartial
+              ? 'border-dashed border-slate-300 bg-slate-50 text-slate-500 shadow-none'
+              : `text-slate-700 shadow-sm ${palette.bubbleClass}`;
 
             return (
               <div
@@ -89,13 +97,18 @@ export function TranscriptList({
               >
                 <div className="grid grid-cols-[3.3rem_minmax(0,1fr)] items-start gap-3">
                   <div className="pt-3 text-right">
-                    <span className="font-mono text-[0.72rem] font-medium leading-none tracking-[-0.03em] text-slate-400">
+                    <span
+                      className={`font-mono text-[0.72rem] font-medium leading-none tracking-[-0.03em] ${
+                        isPartial ? 'text-slate-300' : 'text-slate-400'
+                      }`}
+                    >
                       {formatTimestamp(segment.startTime).replace(/^\[|\]$/g, '')}
                     </span>
                   </div>
 
                   <div
-                    className={`inline-block w-fit max-w-[min(100%,34rem)] rounded-[22px] border-[1.5px] px-4 py-3 text-[0.92rem] leading-7 text-slate-700 shadow-sm ${palette.bubbleClass}`}
+                    data-partial={isPartial ? 'true' : 'false'}
+                    className={`inline-block w-fit max-w-[min(100%,34rem)] rounded-[22px] border-[1.5px] px-4 py-3 text-[0.92rem] leading-7 ${bubbleClass}`}
                   >
                     {segment.text}
                   </div>

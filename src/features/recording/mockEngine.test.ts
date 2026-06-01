@@ -14,7 +14,11 @@ describe('mock recording engine', () => {
     const onSegment = vi.fn();
     const onTick = vi.fn();
 
-    mockRecordingEngine.start({ onSegment, onTick });
+    await mockRecordingEngine.start({
+      sessionId: 'mock-session-1',
+      language: 'zh-CN',
+      callbacks: { onSegment, onTick },
+    });
 
     vi.advanceTimersByTime(1600);
     vi.advanceTimersByTime(1000);

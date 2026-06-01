@@ -16,6 +16,7 @@ describe('settings normalization', () => {
     expect(normalized.transcriptionEndpoint).toBe(defaultSettings.transcriptionEndpoint);
     expect(normalized.transcriptionApiKey).toBe(defaultSettings.transcriptionApiKey);
     expect(normalized.liveTranscriptionLanguage).toBe(defaultSettings.liveTranscriptionLanguage);
+    expect(normalized.liveTranscriptionRoute).toBe(defaultSettings.liveTranscriptionRoute);
     expect(normalized.allowDemoFallbacks).toBe(defaultSettings.allowDemoFallbacks);
   });
 });

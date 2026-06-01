@@ -17,13 +17,18 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (requestPath) => requestPath.replace(/^\/__light_whisper/u, ''),
       },
+      '/__light_realtime': {
+        target: 'http://127.0.0.1:8180',
+        changeOrigin: true,
+        ws: true,
+      },
     },
   },
   test: {
     environment: 'jsdom',
     globals: true,
     setupFiles: './src/test/setup.ts',
-    exclude: ['backups/**', 'node_modules/**', 'dist/**'],
+    exclude: ['backups/**', 'node_modules/**', 'dist/**', '.tmp/**'],
     environmentOptions: {
       jsdom: {
         url: 'http://localhost/',

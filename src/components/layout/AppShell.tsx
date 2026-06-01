@@ -33,6 +33,11 @@ export function AppShell() {
   const meetingsQuery = useMeetingsQuery();
   const status = useRecordingStore((state) => state.status);
   const activeMeetingTitle = useRecordingStore((state) => state.activeMeetingTitle);
+  const transportStatus = useRecordingStore((state) => state.transportStatus);
+  const sessionCapabilities = useRecordingStore((state) => state.sessionCapabilities);
+  const errorMessage = useRecordingStore((state) => state.errorMessage);
+  const lastError = useRecordingStore((state) => state.lastError);
+  const lastWarning = useRecordingStore((state) => state.lastWarning);
 
   const recentMeetings = useMemo(() => {
     const meetings = meetingsQuery.data ?? [];
@@ -145,12 +150,49 @@ export function AppShell() {
         </div>
 
         <div className="space-y-3 border-t-[2px] border-dashed border-pink-200 pt-4">
-          {status === 'recording' || status === 'paused' ? (
-            <div className="rounded-xl border-[2px] border-pink-100 bg-pink-50 p-3 text-sm text-slate-600 shadow-macaron-button-pink">
-              <p className="font-bold text-slate-700">{status === 'recording' ? 'Recording now' : 'Paused session'}</p>
-              <p className="mt-1 truncate text-xs text-slate-500">
-                {activeMeetingTitle || 'Current meeting'}
+          {status === 'recording' || status === 'paused' || status === 'finalizing' || status === 'saving' || status === 'error' ? (
+            <div className={`rounded-xl border-[2px] p-3 text-sm shadow-macaron-button-pink ${
+              status === 'error'
+                ? 'border-red-200 bg-red-50 text-red-600'
+                : 'border-pink-100 bg-pink-50 text-slate-600'
+            }`}>
+              <p className="font-bold text-slate-700">
+                {status === 'recording'
+                  ? 'Recording now'
+                  : status === 'paused'
+                    ? 'Paused session'
+                    : status === 'finalizing'
+                      ? 'Finalizing session'
+                      : status === 'saving'
+                        ? 'Saving meeting'
+                        : 'Recording error'}
               </p>
+              {status === 'error' ? (
+                <>
+                  <p className="mt-1 text-xs text-red-600">
+                    {errorMessage || 'The current recording session failed.'}
+                  </p>
+                  <p className="mt-1 text-[11px] uppercase tracking-[0.16em] text-red-400">
+                    {lastError?.source ?? 'transport'}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="mt-1 truncate text-xs text-slate-500">
+                    {activeMeetingTitle || 'Current meeting'}
+                  </p>
+                  <p className="mt-1 text-[11px] uppercase tracking-[0.16em] text-slate-400">
+                    {sessionCapabilities
+                      ? `${transportStatus} · ${sessionCapabilities.acceptedLanguage}`
+                      : transportStatus}
+                  </p>
+                  {lastWarning ? (
+                    <p className="mt-2 text-xs text-amber-600">
+                      {lastWarning.source}: {lastWarning.message}
+                    </p>
+                  ) : null}
+                </>
+              )}
             </div>
           ) : null}
 

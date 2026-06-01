@@ -13,6 +13,7 @@ const defaultSettings: AppSettings = {
   transcriptionEndpoint: '',
   transcriptionApiKey: '',
   liveTranscriptionLanguage: 'auto',
+  liveTranscriptionRoute: 'prefer-realtime',
   endpoint: 'https://api.openai.com/v1',
   apiKey: '',
   recordingsPath: 'Browser local storage',
@@ -38,6 +39,8 @@ function normalizeSettings(settings?: Partial<AppSettings> | null): AppSettings 
     transcriptionApiKey: settings?.transcriptionApiKey ?? defaultSettings.transcriptionApiKey,
     liveTranscriptionLanguage:
       settings?.liveTranscriptionLanguage ?? defaultSettings.liveTranscriptionLanguage,
+    liveTranscriptionRoute:
+      settings?.liveTranscriptionRoute ?? defaultSettings.liveTranscriptionRoute,
     endpoint: settings?.endpoint ?? defaultSettings.endpoint,
     apiKey: settings?.apiKey ?? defaultSettings.apiKey,
     recordingsPath: settings?.recordingsPath ?? defaultSettings.recordingsPath,

@@ -1,7 +1,12 @@
 import { createId } from '../../lib/storage';
 import type { LiveTranscriptionLanguage } from '../../types/settings';
 import { hasUsableTranscriptText, sanitizeTranscriptText } from './transcriptSanitizer';
-import type { RecordingEngine, RecordingEngineCallbacks, RecordingEngineSnapshot } from './engineTypes';
+import type {
+  RecordingEngine,
+  RecordingEngineCallbacks,
+  RecordingEngineSnapshot,
+  RecordingEngineStartOptions,
+} from './engineTypes';
 
 interface BrowserSpeechRecognitionAlternative {
   transcript: string;
@@ -94,6 +99,7 @@ class BrowserSpeechEngine implements RecordingEngine {
   private recognition: BrowserSpeechRecognition | null = null;
   private shouldContinue = false;
   private preferredLanguage: LiveTranscriptionLanguage;
+  private sessionId = 'browser-speech-session';
 
   constructor(preferredLanguage: LiveTranscriptionLanguage = 'auto') {
     this.preferredLanguage = preferredLanguage;
@@ -103,7 +109,7 @@ class BrowserSpeechEngine implements RecordingEngine {
     return Boolean(getSpeechRecognitionConstructor());
   }
 
-  start(callbacks: RecordingEngineCallbacks) {
+  async start(options: RecordingEngineStartOptions) {
     const Recognition = getSpeechRecognitionConstructor();
 
     if (!Recognition) {
@@ -112,8 +118,11 @@ class BrowserSpeechEngine implements RecordingEngine {
 
     this.reset();
     this.state = 'recording';
-    this.callbacks = callbacks;
+    this.callbacks = options.callbacks;
+    this.sessionId = options.sessionId;
     this.shouldContinue = true;
+    this.callbacks.onMicStatus?.('ready');
+    this.callbacks.onVoiceState?.('silence');
     this.startTicking();
     this.startRecognition(Recognition);
   }
@@ -190,14 +199,27 @@ class BrowserSpeechEngine implements RecordingEngine {
 
         const endTime = Math.max(this.elapsedSeconds, 1);
         const startTime = Math.max(endTime - 4, 0);
-
-        this.callbacks?.onSegment({
+        const segment = {
           id: createId('segment-live'),
           startTime,
           endTime,
           text,
           confidence: result[0]?.confidence || 0.92,
-        });
+        };
+        if (this.callbacks?.onAsrEvent) {
+          this.callbacks.onAsrEvent({
+            type: 'final',
+            sessionId: this.sessionId,
+            groupId: segment.id,
+            utteranceId: segment.id,
+            revision: 1,
+            startMs: startTime * 1000,
+            endMs: endTime * 1000,
+            text,
+          });
+        } else {
+          this.callbacks?.onSegment?.(segment);
+        }
         this.emittedCount += 1;
       }
     };
@@ -244,6 +266,7 @@ class BrowserSpeechEngine implements RecordingEngine {
     this.callbacks = null;
     this.recognition = null;
     this.shouldContinue = false;
+    this.sessionId = 'browser-speech-session';
   }
 }
 
